@@ -3181,7 +3181,8 @@ static void atk23_getexp(void)
                 // music change in wild battle after fainting a poke
                 if (!(gBattleTypeFlags & (BATTLE_TYPE_TRAINER | BATTLE_TYPE_POKEDUDE))
                  && gBattleMons[0].hp
-                 && !gBattleStruct->wildVictorySong)
+                 && !gBattleStruct->wildVictorySong
+                 && !gBattleScripting.monCaught)
                 {
                     BattleStopLowHpSound();
                     PlayBGM(MUS_VICTORY_WILD);
