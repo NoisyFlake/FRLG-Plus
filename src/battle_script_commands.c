@@ -3160,6 +3160,8 @@ static void atk23_getexp(void)
             ++gBattleScripting.atk23_state;
             gBattleStruct->expGetterMonId = 0;
             gBattleStruct->sentInPokes = sentIn;
+
+            PrepareStringBattle(STRINGID_PKMNGAINEDEXP, 0);
         }
         // fall through
     case 2: // set exp value to the poke in expgetter_id and print message
@@ -3225,13 +3227,7 @@ static void atk23_getexp(void)
                     {
                         gBattleStruct->expGetterBattlerId = 0;
                     }
-                    if (gBattleStruct->sentInPokes & 1) {
-                        PREPARE_MON_NICK_WITH_PREFIX_BUFFER(gBattleTextBuff1, gBattleStruct->expGetterBattlerId, gBattleStruct->expGetterMonId);
-                        // buffer 'gained' or 'gained a boosted'
-                        PREPARE_STRING_BUFFER(gBattleTextBuff2, i);
-                        PREPARE_WORD_NUMBER_BUFFER(gBattleTextBuff3, 5, gBattleMoveDamage);
-                        PrepareStringBattle(STRINGID_PKMNGAINEDEXP, gBattleStruct->expGetterBattlerId);
-                    }
+
                     MonGainEVs(&gPlayerParty[gBattleStruct->expGetterMonId], gBattleMons[gBattlerFainted].species);
                 }
                 gBattleStruct->sentInPokes >>= 1;
