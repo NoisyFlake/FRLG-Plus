@@ -3134,7 +3134,7 @@ static void atk23_getexp(void)
                         holdEffect = ItemId_GetHoldEffect(item);
                 }
             }
-            calculatedExp = gBaseStats[gBattleMons[gBattlerFainted].species].expYield * gBattleMons[gBattlerFainted].level / 7;
+            calculatedExp = gBaseStats[gBattleMons[gBattlerFainted].species].expYield * gBattleMons[gBattlerFainted].level / 5;
             switch(gSaveBlock1Ptr->keyFlags.expMod)
             {
                 case 0:
@@ -3167,6 +3167,8 @@ static void atk23_getexp(void)
     case 2: // set exp value to the poke in expgetter_id and print message
         if (!gBattleControllerExecFlags)
         {
+            double adjustment;
+            
             item = GetMonData(&gPlayerParty[gBattleStruct->expGetterMonId], MON_DATA_HELD_ITEM);
             if (item == ITEM_ENIGMA_BERRY)
                 holdEffect = gSaveBlock1Ptr->enigmaBerry.holdEffect;
@@ -3196,6 +3198,13 @@ static void atk23_getexp(void)
                         gBattleMoveDamage = *exp;
                     else
                         gBattleMoveDamage = gExpShareExp;
+
+                    // Gen 7+ Adjustment based on own Pokemon level:
+                    // ((2*EnemyLevel + 10) / (EnemyLevel + OwnLevel + 10))^2.5 + 1
+                    adjustment = (double)(2 * gBattleMons[gBattlerFainted].level + 10) / (gBattleMons[gBattlerFainted].level + GetMonData(&gPlayerParty[gBattleStruct->expGetterMonId], MON_DATA_LEVEL) + 10);
+                    adjustment = (double)(adjustment * adjustment) * ((double)Sqrt(adjustment * 10000)/100); // Using *10000 because Sqrt only returns an integer
+                    gBattleMoveDamage = gBattleMoveDamage * adjustment + 1;
+
                     if (holdEffect == HOLD_EFFECT_LUCKY_EGG)
                         gBattleMoveDamage = (gBattleMoveDamage * 150) / 100;
                     if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
