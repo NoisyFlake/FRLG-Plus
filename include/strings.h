@@ -227,6 +227,9 @@ extern const u8 gText_MoveInterfaceType[];
 extern const u8 gText_LinkStandby[];
 extern const u8 gText_BattleMenu[];
 extern const u8 gText_WhatWillPkmnDo[];
+extern const u8 gColor_SuperEffective[];
+extern const u8 gColor_NotVeryEffective[];
+extern const u8 gColor_NoEffect[];
 
 // battle_script_commands
 extern const u8 gText_BattleYesNoChoice[];

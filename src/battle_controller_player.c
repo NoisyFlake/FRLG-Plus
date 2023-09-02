@@ -8,6 +8,7 @@
 #include "party_menu.h"
 #include "pokeball.h"
 #include "strings.h"
+#include "pokedex.h"
 #include "pokemon_special_anim.h"
 #include "task.h"
 #include "util.h"
@@ -1371,14 +1372,39 @@ static void DoHitAnimBlinkSpriteEffect(void)
 
 static void MoveSelectionDisplayMoveNames(void)
 {
+    u8 targetId;
+    u16 move;
+    u8 moveFlags;
+
     s32 i;
     struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct *)(&gBattleBufferA[gActiveBattler][4]);
     gNumberOfMovesToChoose = 0;
 
+    targetId = GetBattlerAtPosition(BATTLE_OPPOSITE(GetBattlerPosition(gActiveBattler)));
+
     for (i = 0; i < MAX_MON_MOVES; ++i)
     {
         MoveSelectionDestroyCursorAt(i);
-        StringCopy(gDisplayedStringBattle, gUnknown_83FE770);
+
+        if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(gBattleMons[targetId].species), FLAG_GET_SEEN)) {
+            move = moveInfo->moves[i];
+            moveFlags = AI_TypeCalc(move, gBattleMons[targetId].species, gBattleMons[targetId].ability);
+            if (moveFlags & MOVE_RESULT_NO_EFFECT) {
+                StringCopy(gDisplayedStringBattle, gColor_NoEffect);
+            }
+            else if (moveFlags & MOVE_RESULT_NOT_VERY_EFFECTIVE ) {
+                StringCopy(gDisplayedStringBattle, gColor_NotVeryEffective);
+            }
+            else if (moveFlags & MOVE_RESULT_SUPER_EFFECTIVE) {
+                StringCopy(gDisplayedStringBattle, gColor_SuperEffective);
+            } 
+            else {
+                StringCopy(gDisplayedStringBattle, gUnknown_83FE770);
+            }
+        } else {
+            StringCopy(gDisplayedStringBattle, gUnknown_83FE770);
+        }
+        
         StringAppend(gDisplayedStringBattle, gMoveNames[moveInfo->moves[i]]);
         BattlePutTextOnWindow(gDisplayedStringBattle, i + 3);
         if (moveInfo->moves[i] != MOVE_NONE)
