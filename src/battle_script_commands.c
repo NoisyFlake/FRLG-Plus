@@ -2071,7 +2071,7 @@ static void atk12_waitmessage(void)
         {
             u16 toWait = T2_READ_16(gBattlescriptCurrInstr + 1);
 
-            if (++gPauseCounterBattle >= toWait || (gSaveBlock2Ptr->optionsBattleSceneOff && (JOY_NEW(A_BUTTON | B_BUTTON))))
+            if (++gPauseCounterBattle >= toWait || gSaveBlock2Ptr->optionsBattleSceneOff || (JOY_NEW(A_BUTTON | B_BUTTON)))
             {
                 gPauseCounterBattle = 0;
                 gBattlescriptCurrInstr += 3;
