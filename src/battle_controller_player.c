@@ -1375,6 +1375,7 @@ static void MoveSelectionDisplayMoveNames(void)
     u8 targetId;
     u16 move;
     u8 moveFlags;
+    u8 moveType;
 
     s32 i;
     struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct *)(&gBattleBufferA[gActiveBattler][4]);
@@ -1382,27 +1383,60 @@ static void MoveSelectionDisplayMoveNames(void)
 
     targetId = GetBattlerAtPosition(BATTLE_OPPOSITE(GetBattlerPosition(gActiveBattler)));
 
+    // Super effective
+    gPlttBufferFaded[0x51] = RGB( 90 * 31 / 255,  156 * 31 / 255,  65 * 31 / 255);
+    gPlttBufferFaded[0x52] = RGB( 148 * 31 / 255,  246 * 31 / 255,  148 * 31 / 255);
+    // STAB
+    gPlttBufferFaded[0x53] = RGB( 0 * 31 / 255,  164 * 31 / 255,  0 * 31 / 255);
+    gPlttBufferFaded[0x54] = RGB( 106 * 31 / 255,  246 * 31 / 255,  106 * 31 / 255);
+
+    // Not very effective
+    gPlttBufferFaded[0x55] = RGB( 238 * 31 / 255,  222 * 31 / 255,  0 * 31 / 255);
+    gPlttBufferFaded[0x56] = RGB( 255 * 31 / 255,  246 * 31 / 255,  139 * 31 / 255);
+    // STAB
+    gPlttBufferFaded[0x57] = RGB( 255 * 31 / 255,  148 * 31 / 255,  0 * 31 / 255);
+    gPlttBufferFaded[0x58] = RGB( 255 * 31 / 255,  238 * 31 / 255,  115 * 31 / 255);
+
+    // No effect
+    gPlttBufferFaded[0x59] = RGB( 230 * 31 / 255,  65 * 31 / 255,  65 * 31 / 255);
+    gPlttBufferFaded[0x5A] = RGB( 246 * 31 / 255,  222 * 31 / 255,  156 * 31 / 255);
+
+    // Regular STAB
+    gPlttBufferFaded[0x5C] = RGB( 0 * 31 / 255,  0 * 31 / 255,  0 * 31 / 255);
+    // 5B is broken, and 5D-5F are used for regular non-stab and background color
+
     for (i = 0; i < MAX_MON_MOVES; ++i)
     {
         MoveSelectionDestroyCursorAt(i);
 
         if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(gBattleMons[targetId].species), FLAG_GET_SEEN)) {
             move = moveInfo->moves[i];
+            moveType = gBattleMoves[move].type;
             moveFlags = AI_TypeCalc(move, gBattleMons[targetId].species, gBattleMons[targetId].ability);
             if (moveFlags & MOVE_RESULT_NO_EFFECT) {
                 StringCopy(gDisplayedStringBattle, gColor_NoEffect);
             }
             else if (moveFlags & MOVE_RESULT_NOT_VERY_EFFECTIVE ) {
-                StringCopy(gDisplayedStringBattle, gColor_NotVeryEffective);
+                if (gBaseStats[gBattleMons[gActiveBattler].species].type1 == moveType || gBaseStats[gBattleMons[gActiveBattler].species].type2 == moveType) {
+                    StringCopy(gDisplayedStringBattle, gColor_NotVeryEffectiveStab);
+                } else {
+                    StringCopy(gDisplayedStringBattle, gColor_NotVeryEffective);
+                }
             }
             else if (moveFlags & MOVE_RESULT_SUPER_EFFECTIVE) {
-                StringCopy(gDisplayedStringBattle, gColor_SuperEffective);
-            } 
-            else {
-                StringCopy(gDisplayedStringBattle, gUnknown_83FE770);
+                if (gBaseStats[gBattleMons[gActiveBattler].species].type1 == moveType || gBaseStats[gBattleMons[gActiveBattler].species].type2 == moveType) {
+                    StringCopy(gDisplayedStringBattle, gColor_SuperEffectiveStab);
+                } else {
+                    StringCopy(gDisplayedStringBattle, gColor_SuperEffective);
+                }
+            } else {
+                if (gBattleMoves[move].power && (gBaseStats[gBattleMons[gActiveBattler].species].type1 == moveType || gBaseStats[gBattleMons[gActiveBattler].species].type2 == moveType)) {
+                    // Only a STAB if the move has power (e.g. it's not a status move). Not necessary for super/not very effective because AI_TypeCalc already includes this
+                    StringCopy(gDisplayedStringBattle, gColor_NormalEffectiveStab);
+                } else {
+                    StringCopy(gDisplayedStringBattle, gUnknown_83FE770);
+                }
             }
-        } else {
-            StringCopy(gDisplayedStringBattle, gUnknown_83FE770);
         }
         
         StringAppend(gDisplayedStringBattle, gMoveNames[moveInfo->moves[i]]);
