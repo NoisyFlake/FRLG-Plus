@@ -4908,6 +4908,7 @@ extern const u16 gBattleInterface_BallStatusBarPal[];
 extern const u16 gBattleInterface_BallDisplayPal[];
 extern const u16 gBattleInterface_SummaryBallDisplayGfx[];
 extern const u8 gNuzlockeFirstEncounterIndicator[];
+extern const u16 gBattleInterface_TypeEffectiveness[];
 
 // item_menu
 extern const u32 gUnknown_8E830CC[];

@@ -953,6 +953,7 @@ const u32 gBattleAnimSpriteGfx_FlatRock[] = INCBIN_U32("graphics/battle_anims/sp
 const u32 gBattleAnimSpritePal_FlatRock[] = INCBIN_U32("graphics/battle_anims/sprites/flat_rock.gbapal.lz");
 
 const u16 gUnknown_8D2FBB4[] = INCBIN_U16("graphics/interface/unk_8D2FBB4.gbapal");
+const u16 gBattleInterface_TypeEffectiveness[] = INCBIN_U16("graphics/battle_interface/typeeffectiveness.gbapal");
 
 #include "data/graphics/pokemon.h"
 #include "data/graphics/trainers.h"

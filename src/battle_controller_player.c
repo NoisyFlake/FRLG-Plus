@@ -8,7 +8,6 @@
 #include "party_menu.h"
 #include "pokeball.h"
 #include "strings.h"
-#include "pokedex.h"
 #include "pokemon_special_anim.h"
 #include "task.h"
 #include "util.h"
@@ -23,6 +22,7 @@
 #include "constants/items.h"
 #include "constants/moves.h"
 #include "constants/songs.h"
+#include "graphics.h"
 
 static void PlayerHandleGetMonData(void);
 static void PlayerHandleSetMonData(void);
@@ -1372,73 +1372,14 @@ static void DoHitAnimBlinkSpriteEffect(void)
 
 static void MoveSelectionDisplayMoveNames(void)
 {
-    u8 targetId;
-    u16 move;
-    u8 moveFlags;
-    u8 moveType;
-
     s32 i;
     struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct *)(&gBattleBufferA[gActiveBattler][4]);
     gNumberOfMovesToChoose = 0;
 
-    targetId = GetBattlerAtPosition(BATTLE_OPPOSITE(GetBattlerPosition(gActiveBattler)));
-
-    // Super effective
-    gPlttBufferFaded[0x51] = RGB( 90 * 31 / 255,  156 * 31 / 255,  65 * 31 / 255);
-    gPlttBufferFaded[0x52] = RGB( 148 * 31 / 255,  246 * 31 / 255,  148 * 31 / 255);
-    // STAB
-    gPlttBufferFaded[0x53] = RGB( 0 * 31 / 255,  164 * 31 / 255,  0 * 31 / 255);
-    gPlttBufferFaded[0x54] = RGB( 106 * 31 / 255,  246 * 31 / 255,  106 * 31 / 255);
-
-    // Not very effective
-    gPlttBufferFaded[0x55] = RGB( 238 * 31 / 255,  222 * 31 / 255,  0 * 31 / 255);
-    gPlttBufferFaded[0x56] = RGB( 255 * 31 / 255,  246 * 31 / 255,  139 * 31 / 255);
-    // STAB
-    gPlttBufferFaded[0x57] = RGB( 255 * 31 / 255,  148 * 31 / 255,  0 * 31 / 255);
-    gPlttBufferFaded[0x58] = RGB( 255 * 31 / 255,  238 * 31 / 255,  115 * 31 / 255);
-
-    // No effect
-    gPlttBufferFaded[0x59] = RGB( 230 * 31 / 255,  65 * 31 / 255,  65 * 31 / 255);
-    gPlttBufferFaded[0x5A] = RGB( 246 * 31 / 255,  222 * 31 / 255,  156 * 31 / 255);
-
-    // Regular STAB
-    gPlttBufferFaded[0x5C] = RGB( 0 * 31 / 255,  0 * 31 / 255,  0 * 31 / 255);
-    // 5B is broken, and 5D-5F are used for regular non-stab and background color
-
     for (i = 0; i < MAX_MON_MOVES; ++i)
     {
         MoveSelectionDestroyCursorAt(i);
-
-        if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(gBattleMons[targetId].species), FLAG_GET_SEEN)) {
-            move = moveInfo->moves[i];
-            moveType = gBattleMoves[move].type;
-            moveFlags = AI_TypeCalc(move, gBattleMons[targetId].species, gBattleMons[targetId].ability);
-            if (moveFlags & MOVE_RESULT_NO_EFFECT) {
-                StringCopy(gDisplayedStringBattle, gColor_NoEffect);
-            }
-            else if (moveFlags & MOVE_RESULT_NOT_VERY_EFFECTIVE ) {
-                if (gBaseStats[gBattleMons[gActiveBattler].species].type1 == moveType || gBaseStats[gBattleMons[gActiveBattler].species].type2 == moveType) {
-                    StringCopy(gDisplayedStringBattle, gColor_NotVeryEffectiveStab);
-                } else {
-                    StringCopy(gDisplayedStringBattle, gColor_NotVeryEffective);
-                }
-            }
-            else if (moveFlags & MOVE_RESULT_SUPER_EFFECTIVE) {
-                if (gBaseStats[gBattleMons[gActiveBattler].species].type1 == moveType || gBaseStats[gBattleMons[gActiveBattler].species].type2 == moveType) {
-                    StringCopy(gDisplayedStringBattle, gColor_SuperEffectiveStab);
-                } else {
-                    StringCopy(gDisplayedStringBattle, gColor_SuperEffective);
-                }
-            } else {
-                if (gBattleMoves[move].power && (gBaseStats[gBattleMons[gActiveBattler].species].type1 == moveType || gBaseStats[gBattleMons[gActiveBattler].species].type2 == moveType)) {
-                    // Only a STAB if the move has power (e.g. it's not a status move). Not necessary for super/not very effective because AI_TypeCalc already includes this
-                    StringCopy(gDisplayedStringBattle, gColor_NormalEffectiveStab);
-                } else {
-                    StringCopy(gDisplayedStringBattle, gUnknown_83FE770);
-                }
-            }
-        }
-        
+        StringCopy(gDisplayedStringBattle, gUnknown_83FE770);
         StringAppend(gDisplayedStringBattle, gMoveNames[moveInfo->moves[i]]);
         BattlePutTextOnWindow(gDisplayedStringBattle, i + 3);
         if (moveInfo->moves[i] != MOVE_NONE)
@@ -1467,16 +1408,53 @@ static void MoveSelectionDisplayPpNumber(void)
     BattlePutTextOnWindow(gDisplayedStringBattle, 9);
 }
 
+#define SUPER_EFFECTIVE_COLOURS 0
+#define NOT_VERY_EFFECTIVE_COLOURS 4
+#define NO_EFFECT_COLOURS 8
+#define REGULAR_COLOURS 12
 static void MoveSelectionDisplayMoveType(void)
 {
     u8 *txtPtr;
     struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct *)(&gBattleBufferA[gActiveBattler][4]);
 
+    u8 targetId = GetBattlerAtPosition(BATTLE_OPPOSITE(GetBattlerPosition(gActiveBattler)));
+    u16 move = moveInfo->moves[gMoveSelectionCursor[gActiveBattler]];
+    const u16 *palPtr = gBattleInterface_TypeEffectiveness;
+
+    // Show type effectiveness only for moves that have power
+    if (gBattleMoves[move].power) {
+
+        u8 moveFlags = AI_TypeCalc(move, gBattleMons[targetId].species, gBattleMons[targetId].ability);
+        u8 moveType = gBattleMoves[move].type;
+        u8 stab = 0;
+
+        if (moveType == gBaseStats[gBattleMons[gActiveBattler].species].type1 || moveType == gBaseStats[gBattleMons[gActiveBattler].species].type2) {
+            stab = 2;
+        }
+
+        if (moveFlags & MOVE_RESULT_SUPER_EFFECTIVE) {
+            gPlttBufferFaded[0x58] = palPtr[SUPER_EFFECTIVE_COLOURS + stab + 0];
+            gPlttBufferFaded[0x59] = palPtr[SUPER_EFFECTIVE_COLOURS + stab + 1];
+        } else if (moveFlags & MOVE_RESULT_NOT_VERY_EFFECTIVE ) {
+            gPlttBufferFaded[0x58] = palPtr[NOT_VERY_EFFECTIVE_COLOURS + stab + 0];
+            gPlttBufferFaded[0x59] = palPtr[NOT_VERY_EFFECTIVE_COLOURS + stab + 1];
+        } else if (moveFlags & MOVE_RESULT_NO_EFFECT) {
+            gPlttBufferFaded[0x58] = palPtr[NO_EFFECT_COLOURS + 0];
+            gPlttBufferFaded[0x59] = palPtr[NO_EFFECT_COLOURS + 1];
+        } else {
+            gPlttBufferFaded[0x58] = palPtr[REGULAR_COLOURS + stab + 0];
+            gPlttBufferFaded[0x59] = palPtr[REGULAR_COLOURS + stab + 1];
+        }
+    } else {
+        gPlttBufferFaded[0x58] = palPtr[REGULAR_COLOURS + 0];
+        gPlttBufferFaded[0x59] = palPtr[REGULAR_COLOURS + 1];
+    }
+
     txtPtr = StringCopy(gDisplayedStringBattle, gText_MoveInterfaceType);
     *txtPtr++ = EXT_CTRL_CODE_BEGIN;
     *txtPtr++ = 6;
     *txtPtr++ = 1;
-    txtPtr = StringCopy(txtPtr, gUnknown_83FE770);
+    txtPtr = StringCopy(txtPtr, gText_TypeEffectiveness);
     if (moveInfo->moves[gMoveSelectionCursor[gActiveBattler]] == MOVE_HIDDEN_POWER)
     {
         u8 typeBits  = ((GetMonData(&gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_HP_IV) & 1) << 0)
